@@ -1,78 +1,258 @@
-<input type="text" id="keyword" placeholder="keyword">
-<button onclick="search(1)">search</button>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>校友搜索系统</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-<div id="pagination"></div>
-<hr>
-<div id="result"></div>
+<style>
+body {
+    background: #f4f6f9;
+    font-family: Arial;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 40px auto;
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px 20px;
+    background: #409eff;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.card {
+    display: flex;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    margin-right: 20px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.info {
+    flex: 1;
+}
+
+.name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.meta {
+    margin-top: 5px;
+    color: #666;
+}
+
+.auth {
+    margin-top: 5px;
+    font-weight: bold;
+    color: green;
+}
+
+.pagination button {
+    margin-right: 5px;
+    background: #e4e7ed;
+    color: black;
+}
+
+.pagination button.active {
+    background: #409eff;
+    color: white;
+}
+
+.json-tooltip {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 450px;
+    max-height: 500px;
+    overflow: auto;
+    background: black;
+    color: #00ff99;
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    z-index: 999;
+}
+</style>
+</head>
+
+<body>
+<div id="app" class="container">
+
+<div class="search-box">
+    <input v-model="keyword" @keyup.enter="search(1)" placeholder="输入关键词">
+    <button @click="search(1)">搜索</button>
+</div>
+
+<div v-for="item in results" :key="item._raw" class="card">
+
+    <img class="avatar"
+         :src="item.avatar || defaultAvatar"
+         @mouseenter="showJson(item._raw)"
+         @mouseleave="hideJson">
+
+    <div class="info">
+
+        <div class="name">
+            {{ item.name || '未知姓名' }}
+        </div>
+
+        <div class="meta">
+            学院：{{ getCollege(item) }}
+        </div>
+
+        <div class="meta">
+            专业：{{ getMajor(item) }}
+        </div>
+
+        <div class="meta">
+            入学：{{ getJoinYear(item) }} -
+            毕业：{{ getGraduateYear(item) }}
+        </div>
+
+        <div class="meta">
+            工作：{{ getCompany(item) }} {{ getDuty(item) }}
+        </div>
+
+        <div class="auth" v-if="item.authentication === 1">
+            ✔ 已认证
+        </div>
+
+    </div>
+</div>
+
+<div class="pagination">
+    <button
+        v-for="i in totalPage"
+        :key="i"
+        :class="{active: i===page}"
+        @click="search(i)">
+        {{ i }}
+    </button>
+</div>
+
+<div v-if="hoverJson" class="json-tooltip">
+{{ hoverJson }}
+</div>
+
+</div>
 
 <script>
-let currentKeyword = "";
+const { createApp } = Vue
 
-function search(page) {
+createApp({
 
-    currentKeyword = document.getElementById("keyword").value;
+data() {
+    return {
+        keyword: '',
+        results: [],
+        page: 1,
+        size: 20,
+        total: 0,
+        totalPage: 0,
+        hoverJson: null,
+        defaultAvatar: 'https://alumni.njupt.edu.cn/template/init_img/avatar/mini_default_avatar.png'
+    }
+},
+
+methods: {
+
+search(page) {
+
+    this.page = page
 
     fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            keyword: currentKeyword,
-            page: page,
-            size: 20
+            keyword: this.keyword,
+            page: this.page,
+            size: this.size
         })
     })
     .then(res => res.json())
     .then(res => {
 
-        let resultDiv = document.getElementById("result");
-        resultDiv.innerHTML = "";
+        this.results = res.data.map(raw => {
+            let obj = JSON.parse(raw)
+            obj._raw = raw   // 保存原始字符串
+            return obj
+        })
 
-        res.data.forEach(rawItem => {
+        this.total = res.total
+        this.totalPage = Math.ceil(this.total / this.size)
+    })
+},
 
-            try {
+getCollege(item) {
+    return item.learnEntityList?.[0]?.college || ''
+},
 
-                // 🔥 关键：把字符串转回对象
-                let item = JSON.parse(rawItem);
+getMajor(item) {
+    return item.learnEntityList?.[0]?.major || ''
+},
 
-                let div = document.createElement("div");
+getJoinYear(item) {
+    return item.learnEntityList?.[0]?.joinYear || ''
+},
 
-                div.innerHTML =
-                    "<pre>" +
-                    JSON.stringify(item, null, 2) +
-                    "</pre>";
+getGraduateYear(item) {
+    return item.learnEntityList?.[0]?.graduateYear || ''
+},
 
-                resultDiv.appendChild(div);
+getCompany(item) {
+    return item.workDTOList?.[0]?.companyName || ''
+},
 
-            } catch (e) {
-                console.error("JSON parse error:", e);
-            }
-        });
+getDuty(item) {
+    return item.workDTOList?.[0]?.duty || ''
+},
 
-        renderPagination(res.total, page);
-    });
-}
-
-function renderPagination(total, page) {
-
-    let pageSize = 20;
-    let totalPage = Math.ceil(total / pageSize);
-
-    let div = document.getElementById("pagination");
-    div.innerHTML = "";
-
-    for (let i = 1; i <= totalPage && i <= 100; i++) {
-
-        let btn = document.createElement("button");
-        btn.innerText = i;
-
-        if (i === page) {
-            btn.style.backgroundColor = "#4CAF50";
-            btn.style.color = "white";
-        }
-
-        btn.onclick = () => search(i);
-
-        div.appendChild(btn);
+showJson(raw) {
+    try {
+        this.hoverJson = JSON.stringify(JSON.parse(raw), null, 2)
+    } catch {
+        this.hoverJson = raw
     }
+},
+
+hideJson() {
+    this.hoverJson = null
 }
+
+}
+
+}).mount("#app")
 </script>
+
+</body>
+</html>
