@@ -114,39 +114,32 @@ button {
 </div>
 
 <div v-for="item in results" :key="item._raw" class="card">
-
+    <!-- 根据姓名获取固定头像 -->
     <img class="avatar"
-         :src="item.avatar || defaultAvatar"
+         :src="item.avatar || getFixedAvatarByUsername(item.name || '未知姓名')"
          @mouseenter="showJson(item._raw)"
          @mouseleave="hideJson">
 
     <div class="info">
-
         <div class="name">
             {{ item.name || '未知姓名' }}
         </div>
-
         <div class="meta">
             学院：{{ getCollege(item) }}
         </div>
-
         <div class="meta">
             专业：{{ getMajor(item) }}
         </div>
-
         <div class="meta">
             入学：{{ getJoinYear(item) }} -
             毕业：{{ getGraduateYear(item) }}
         </div>
-
         <div class="meta">
             工作：{{ getCompany(item) }} {{ getDuty(item) }}
         </div>
-
         <div class="auth" v-if="item.authentication === 1">
             ✔ 已认证
         </div>
-
     </div>
 </div>
 
@@ -170,7 +163,6 @@ button {
 const { createApp } = Vue
 
 createApp({
-
 data() {
     return {
         keyword: '',
@@ -180,77 +172,90 @@ data() {
         total: 0,
         totalPage: 0,
         hoverJson: null,
-        defaultAvatar: 'https://alumni.njupt.edu.cn/template/init_img/avatar/mini_default_avatar.png'
+        // 鸣潮椿相关图片链接库（补全https）
+        avatarList: [
+            // 作品图
+            "https://img2.huashi6.com/images/resource/thumbnail/2025/09/11/124249_76901362422.jpg",
+            "https://img2.huashi6.com/images/resource/thumbnail/2025/06/28/183757_7705120182.jpg",
+            "https://img2.huashi6.com/images/resource/thumbnail/2025/05/12/20115_86588720256.jpg",
+            "https://img2.huashi6.com/images/resource/thumbnail/2025/04/02/151143_90386143625.jpg",
+            "https://img2.huashi6.com/images/resource/thumbnail/2025/01/26/19447_84718548994.jpg",
+            "https://img2.huashi6.com/images/resource/thumbnail/2024/12/17/195313_393009570.jpg",
+            // 头像图
+            "https://img2.huashi6.com/images/face/a701357842318/2024/01/17/13358_43885976156.jpg",
+            "https://img2.huashi6.com/images/face/a622643811136/2024/09/27/13216_33635271866.jpg",
+            "https://img2.huashi6.com/images/face/a184902237855/2025/03/17/15720_24024462571.jpg",
+            "https://img2.huashi6.com/images/face/a222612178252/2023/02/27/94319_19927667007.jpg"
+        ]
     }
 },
-
 methods: {
-
-search(page) {
-
-    this.page = page
-
-    fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            keyword: this.keyword,
-            page: this.page,
-            size: this.size
+    search(page) {
+        this.page = page
+        fetch("/api/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                keyword: this.keyword,
+                page: this.page,
+                size: this.size
+            })
         })
-    })
-    .then(res => res.json())
-    .then(res => {
-
-        this.results = res.data.map(raw => {
-            let obj = JSON.parse(raw)
-            obj._raw = raw   // 保存原始字符串
-            return obj
+        .then(res => res.json())
+        .then(res => {
+            this.results = res.data.map(raw => {
+                let obj = JSON.parse(raw)
+                obj._raw = raw   // 保存原始字符串
+                return obj
+            })
+            this.total = res.total
+            this.totalPage = Math.ceil(this.total / this.size)
         })
-
-        this.total = res.total
-        this.totalPage = Math.ceil(this.total / this.size)
-    })
-},
-
-getCollege(item) {
-    return item.learnEntityList?.[0]?.college || ''
-},
-
-getMajor(item) {
-    return item.learnEntityList?.[0]?.major || ''
-},
-
-getJoinYear(item) {
-    return item.learnEntityList?.[0]?.joinYear || ''
-},
-
-getGraduateYear(item) {
-    return item.learnEntityList?.[0]?.graduateYear || ''
-},
-
-getCompany(item) {
-    return item.workDTOList?.[0]?.companyName || ''
-},
-
-getDuty(item) {
-    return item.workDTOList?.[0]?.duty || ''
-},
-
-showJson(raw) {
-    try {
-        this.hoverJson = JSON.stringify(JSON.parse(raw), null, 2)
-    } catch {
-        this.hoverJson = raw
+    },
+    getCollege(item) {
+        return item.learnEntityList?.[0]?.college || ''
+    },
+    getMajor(item) {
+        return item.learnEntityList?.[0]?.major || ''
+    },
+    getJoinYear(item) {
+        return item.learnEntityList?.[0]?.joinYear || ''
+    },
+    getGraduateYear(item) {
+        return item.learnEntityList?.[0]?.graduateYear || ''
+    },
+    getCompany(item) {
+        return item.workDTOList?.[0]?.companyName || ''
+    },
+    getDuty(item) {
+        return item.workDTOList?.[0]?.duty || ''
+    },
+    showJson(raw) {
+        try {
+            this.hoverJson = JSON.stringify(JSON.parse(raw), null, 2)
+        } catch {
+            this.hoverJson = raw
+        }
+    },
+    hideJson() {
+        this.hoverJson = null
+    },
+    // 核心：根据姓名生成哈希值，返回固定头像
+    getFixedAvatarByUsername(name) {
+        // 1. 简单哈希算法：将姓名转换为数字哈希值（兼容中文）
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            // 获取字符的Unicode编码，累加计算哈希
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            // 确保哈希值为正数
+            hash = hash & hash;
+        }
+        // 2. 将哈希值映射到头像数组的索引（固定范围）
+        const index = Math.abs(hash) % this.avatarList.length;
+        // 3. 返回固定索引对应的头像链接
+        return this.avatarList[index];
     }
-},
-
-hideJson() {
-    this.hoverJson = null
 }
-
-}
-
 }).mount("#app")
 </script>
 
