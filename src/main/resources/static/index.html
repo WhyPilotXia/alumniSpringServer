@@ -1,0 +1,78 @@
+<input type="text" id="keyword" placeholder="keyword">
+<button onclick="search(1)">search</button>
+
+<div id="pagination"></div>
+<hr>
+<div id="result"></div>
+
+<script>
+let currentKeyword = "";
+
+function search(page) {
+
+    currentKeyword = document.getElementById("keyword").value;
+
+    fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            keyword: currentKeyword,
+            page: page,
+            size: 20
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+
+        let resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
+
+        res.data.forEach(rawItem => {
+
+            try {
+
+                // 🔥 关键：把字符串转回对象
+                let item = JSON.parse(rawItem);
+
+                let div = document.createElement("div");
+
+                div.innerHTML =
+                    "<pre>" +
+                    JSON.stringify(item, null, 2) +
+                    "</pre>";
+
+                resultDiv.appendChild(div);
+
+            } catch (e) {
+                console.error("JSON parse error:", e);
+            }
+        });
+
+        renderPagination(res.total, page);
+    });
+}
+
+function renderPagination(total, page) {
+
+    let pageSize = 20;
+    let totalPage = Math.ceil(total / pageSize);
+
+    let div = document.getElementById("pagination");
+    div.innerHTML = "";
+
+    for (let i = 1; i <= totalPage && i <= 100; i++) {
+
+        let btn = document.createElement("button");
+        btn.innerText = i;
+
+        if (i === page) {
+            btn.style.backgroundColor = "#4CAF50";
+            btn.style.color = "white";
+        }
+
+        btn.onclick = () => search(i);
+
+        div.appendChild(btn);
+    }
+}
+</script>
