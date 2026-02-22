@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>校友搜索系统</title>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
     background: #f4f6f9;
@@ -12,7 +12,7 @@ body {
 }
 
 .container {
-    max-width: 1100px;
+    max-width: 90%;
     margin: 40px auto;
 }
 
@@ -101,6 +101,47 @@ button {
     border-radius: 8px;
     white-space: pre-wrap;
     z-index: 999;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+
+    .container {
+        margin: 10px;
+    }
+
+    .search-box {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .avatar {
+        margin-right: 0;
+        margin-bottom: 10px;
+        width: 70px;
+        height: 70px;
+    }
+
+    .json-tooltip {
+        width: 90%;
+        right: 5%;
+        top: 10px;
+        max-height: 60vh;
+    }
+
+    .pagination button {
+    background: #e4e7ed;
+    color: black;
+    }
 }
 </style>
 </head>
