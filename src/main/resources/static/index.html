@@ -125,17 +125,17 @@ button {
             {{ item.name || '未知姓名' }}
         </div>
         <div class="meta">
-            学院：{{ getCollege(item) }}
+            学院专业：{{ getCollege(item) }}-{{ getMajor(item) }}
         </div>
         <div class="meta">
-            专业：{{ getMajor(item) }}
+            班级学号：{{ getClassNo(item) }}-{{ getStudentNo(item) }}
         </div>
         <div class="meta">
             入学：{{ getJoinYear(item) }} -
             毕业：{{ getGraduateYear(item) }}
         </div>
         <div class="meta">
-            工作：{{ getCompany(item) }} {{ getDuty(item) }}
+            工作：{{ getCompany(item) }}-{{ getDept(item) }} {{ getDuty(item) }}
         </div>
         <div class="auth" v-if="item.authentication === 1">
             ✔ 已认证
@@ -218,6 +218,12 @@ methods: {
     getMajor(item) {
         return item.learnEntityList?.[0]?.major || ''
     },
+    getClassNo(item) {
+        return item.learnEntityList?.[0]?.classNo || ''
+    },
+    getStudentNo(item) {
+        return item.learnEntityList?.[0]?.studentNo || ''
+    },
     getJoinYear(item) {
         return item.learnEntityList?.[0]?.joinYear || ''
     },
@@ -226,6 +232,9 @@ methods: {
     },
     getCompany(item) {
         return item.workDTOList?.[0]?.companyName || ''
+    },
+    getDept(item) {
+        return item.workDTOList?.[0]?.dept || ''
     },
     getDuty(item) {
         return item.workDTOList?.[0]?.duty || ''
